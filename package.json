@@ -1,0 +1,115 @@
+{
+  "name": "lookin20",
+  "version": "2.0.1",
+  "productName": "Look In - 2.0",
+  "description": "Look in demo version with sql.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" ",
+    "start": "electron . GH_TOKEN='35962316feeff2d8904e9110f43e289a98c84d5b';",
+    "rebuild": "electron-rebuild -f -w sqlite3",
+    "build": "electron-packager . LookInDemo --platform=all --overwrite",
+    "package-mac": "DEBUG=electron-packager electron-packager . --overwrite --prune=true --platform=darwin --arch=x64 --icon=public/img/LogoLookin.icns --prune=true --out=release-builds",
+    "package-win": "electron-packager . --overwrite --platform=win32 --arch=ia32  --icon=public/img/LogoLookin.ico --prune=true --out=release-builds --version-string.CompanyName='BFS' --version-string.FileDescription='LookInDemo' --version-string.ProductName='LookInDemo'",
+    "package-catalyst": "electron-catalyst . --overwrite --prune=true --platform=darwin --arch=x64 --icon=public/img/LogoLookin.icns --prune=true --out=release-builds",
+    "pack": "build",
+    "dist": "build",
+    "dist:all": "build --platform=all"
+  },
+  "build": {
+    "files": [
+      "**/*",
+      "!data${/*}"
+    ],
+    "appId": "com.fbarile.lookin",
+    "mac": {
+      "category": "public.app-category.developer",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "dmg": {
+      "iconSize": 160,
+      "contents": [
+        {
+          "x": 180,
+          "y": 180
+        },
+        {
+          "x": 480,
+          "y": 180,
+          "type": "link",
+          "path": "/Application"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  },
+  "author": "biro",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biroplane/lookin.git"
+  },
+  "devDependencies": {
+    "asar": "^0.13.0",
+    "asar-updater": "^0.3.1",
+    "body-parser": "^1.16.0",
+    "datatables.net": "^2.1.1",
+    "datatables.net-bs": "^2.1.1",
+    "ejs": "^2.5.5",
+    "electron": "^1.4.15",
+    "electron-builder": "^16.4.2",
+    "electron-packager": "^8.5.1",
+    "electron-rebuild": "^1.5.7",
+    "electron-updater": "^1.7.1",
+    "express": "^4.14.0",
+    "jquery": "^3.1.1",
+    "md5": "^2.2.1",
+    "moment": "^2.17.1",
+    "query-string": "^4.3.1",
+    "sql.js": "^0.4.0"
+  },
+  "dependencies": {
+    "asar": "^0.13.0",
+    "asar-updater": "^0.3.1",
+    "better-sqlite3": "^1.4.0",
+    "bluebird": "^3.4.7",
+    "body-parser": "^1.16.1",
+    "datatables.net": "^2.1.1",
+    "datatables.net-bs": "^2.1.1",
+    "ejs": "^2.5.5",
+    "ejs-electron": "^1.0.0",
+    "electron": "^1.4.15",
+    "electron-asar-updater": "^1.1.3",
+    "electron-catalyst": "0.0.4",
+    "electron-ejs": "^1.1.1",
+    "electron-log": "^1.3.0",
+    "electron-packager": "^8.5.1",
+    "electron-plugins": "^0.1.0",
+    "electron-rebuild": "^1.5.7",
+    "electron-simple-updater": "^1.2.0",
+    "electron-updater": "^1.7.1",
+    "express": "^4.15.2",
+    "ftp": "^0.3.10",
+    "ftps": "^1.1.0",
+    "jquery": "^3.1.1",
+    "md5": "^2.2.1",
+    "moment": "^2.17.1",
+    "pug": "^2.0.0-beta9",
+    "query-string": "^4.3.1",
+    "sleep": "^5.1.0",
+    "soap": "^0.18.0",
+    "sql.js": "^0.4.0",
+    "zebra_datepicker": "^1.9.4"
+  },
+  "bugs": {
+    "url": "https://github.com/biroplane/lookin/issues"
+  },
+  "homepage": "https://github.com/biroplane/lookin#readme"
+}
