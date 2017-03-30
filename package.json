@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" ",
-    "start": "electron . GH_TOKEN='35962316feeff2d8904e9110f43e289a98c84d5b';",
+    "start": "electron . ",
     "rebuild": "electron-rebuild -f -w sqlite3",
     "build": "electron-packager . LookInDemo --platform=all --overwrite",
     "package-mac": "DEBUG=electron-packager electron-packager . --overwrite --prune=true --platform=darwin --arch=x64 --icon=public/img/LogoLookin.icns --prune=true --out=release-builds",
