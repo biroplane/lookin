@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <script data-pace-options='{ "ajax": false }' src="/js/pace.min.js"></script>
+
+  <meta charset="UTF-8">
+  <title></title>
+
+  <link rel="stylesheet" href="/css/_bootstrap.css">
+
+  <!-- <link rel="stylesheet" href="./css/bootstrap-table.min.css"> -->
+  <link rel="stylesheet" href="/css/pace.css">
+  <link rel="stylesheet" href="/css/datatables.min.css" />
+  <link rel="stylesheet" href="/css/jquery-ui.min.css">
+  <!-- <link rel="stylesheet" href="./css/jquery-ui.structure.min.css"> -->
+  <link rel="stylesheet" href="/css/bootstrap-select.min.css">
+  <link rel="stylesheet" href="/css/datatables.min.css">
+  <link rel="stylesheet" href="/css/daterangepicker.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <script>
+    // var filters={};
+    // const {ipcRenderer}=require('electron')
+    // ipcRenderer.send('sendFilter','filtri');
+    // ipcRenderer.on('getFilter',(evt, arg)=>{
+    //   filters=arg;
+    // })
+  </script>
+  <script>
+    //window.nodeRequire = require;
+    delete window.require;
+    delete window.exports;
+    delete window.module;
+  </script>
+
+  <script src="/js/jquery-3.1.1.min.js"></script>
+  <script src="/js/bootstrap.min.js"></script>
+  <script src="/js/datatables.min.js"></script>
+  <script src="/js/dataTables.bootstrap.min.js"></script>
+  <script src="/js/jquery-ui.min.js"></script>
+  <script src="/js/dataTables.buttons.min.js"></script>
+  <script src="/js/buttons.html5.min.js"></script>
+  <script src="/js/bootstrap-select.min.js"></script>
+  <script src="/js/bootstrap-editable.js"></script>
+  <script src="/js/jszip.min.js"></script>
+  <script src="/js/moment.js"></script>
+  <script src="/js/daterangepicker.js"></script>
+  <script src="/js/dtplugins.js"></script>
+  <script src="/js/filterByText.js"></script>
+
+</head>
+
+<body>
+
+
+  <div class="container-fluid">
+
+
+    <!--
+┌──────────────────────────────────────┐
+│ ▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ │
+│        ┌──────────────────┐          │
+│ ░░░░░░ │      TABLE       │ ░░░░░░░░ │
+│        └──────────────────┘          │
+│ ▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ │
+└──────────────────────────────────────┘
+-->
+    <h2 style="padding-top:-140px" class="maintitle">
+
+
+
+</h2>
+    <table id="dataTable" class="table display dataTable stripe nowrap" cellspacing="20" width="100%">
+      <!-- <thead><tr><th></th></tr></thead>
+    <tbody><tr><td></td></tr></tbody>
+    <tfoot><tr><th></th></tr></tfoot> -->
+
+    </table>
+
+  </div>
+
+</body>
+<script>
+var mainTable;
+var t;
+var partials = new Array();
+var data = {};
+var viewname;
+
+columnsData = <%- JSON.parse(JSON.stringify(report.data,null,2)) %>;
+//console.log(<%- JSON.parse(JSON.stringify(report.data)) %>);
+columnsData = columnsData[0];
+columns = columnsData.columns;
+viewname = columnsData.nome;
+querystring = <%- JSON.stringify(query,null,2) %>
+//console.log("CARICATO ", columns);
+newcol = [];
+$.each(columns, function(key, val) {
+  cname = '';
+
+  switch (val.type) {
+    case 'STRING':
+    case 'VARCHAR':
+      cname = 'text-left';
+      break;
+    case 'DATE':
+      cname = 'text-center';
+      break;
+    default:
+      cname = 'text-right';
+  }
+  //console.log("COLONNE K ", key, val,cname);
+  newcol.push({
+    data: val.nome.toString(),
+    title: val.nome.toString().split("_").join(" "),
+    type: val.type,
+    /*(val.TYPE != '') ? val.TYPE : "string",*/
+    render: columnRender(val),
+    className: cname
+  });
+  //newcol.push({"data":v.toString(),type:"text"});
+  //console.log("TIPO DATO COLONNA ",newcol[key].type);
+})
+
+//console.log(" COLONNE ", columns.length, " NEW COL ",newcol);
+data.columns = newcol;
+$().ready(function () {
+  mainTable = $("#dataTable").DataTable({
+    columns: data.columns,
+    serverSide:false,
+    processing:false,
+    deferRender:true,
+    paging:true,
+    ordering:false,
+    displayLength: 25,
+
+    "language": {
+      "decimal": ",",
+      "thousands": ".",
+      "zeroRecords": "No records found, sorry"
+    },
+    "stripeClasses": ['oddo', 'eveno'],
+    ajax: {
+      type:'GET',
+      url:'http://localhost:3000/server/data/'+viewname,
+      dataType:'json',
+
+    }
+  })
+})
+function columnRender(column) {
+  var ret = "";
+  var tt = '';
+  //console.log("ANALIZZZO LA COLONNA",column.type);
+  switch (column.type) {
+    case 'string':
+    case 'VARCHAR':
+    case '':
+    case 'WEEK':
+      ret = function(data, type, row) {
+        return data;
+      }
+      break;
+    case 'MONTH':
+      ret = function(data, type, row) {
+        // data = data.split("-");
+        // data = "20" + data[1] + "-" + data[0] + "-01";
+        // return moment(data).format("MM-YY")
+        return data;
+      }
+      break
+    case 'YEAR':
+      ret = function(data, type, row) {
+        return data;
+      }
+      break;
+    case "DATE":
+    case 'date':
+    case 'day':
+    case 'DATA':
+      ret = function(data, type, row) {
+        if (type === 'display' || type == 'filter') {
+
+          var d = new Date(data * 1000);
+          dd = d.getDate() + '-' + (d.getMonth() + 1) + '-' + d.getFullYear();
+          //console.log("GOT FILTER!!!",dd);
+        }
+        return "<span class='weeknumber'>" + moment(data).format("(W)") + "</span> " + moment(data).format("YY-MM-DD");
+      }
+      //};
+
+      break;
+    case 'INTEGER':
+      //console.log("VALORE INTEGER");
+      ret = $.fn.dataTable.render.number('.', ',', 0, '');
+      break;
+    case 'FLOAT':
+      //ret = formatCurrency;
+      ret = $.fn.dataTable.render.number('.', ',', 2, '');
+      break;
+    default:
+      ret = function(data, type, row) {
+        return data;
+
+      }
+  }
+  return ret
+}
+
+function operation(op, val, i) {
+  i=(i)?i:0;
+  //console.log("ESEGUO OPERAZIONE ", op);
+  switch (op) {
+    case 'sum':
+      //console.log("-------SOMMA--------");
+      s = val.reduce(function(a, b) {
+        return a + b;
+      }, 0);
+      return s;
+      break;
+    case 'avg':
+      //console.log("-------MEDIA--------");
+      s = val.reduce(function(a, b) {
+        return a + b;
+      }, 0)
+
+      return s / val.length;
+      break;
+    case 'min':
+      s = Math.min.apply(null, val);
+      return s;
+      break;
+    case 'max':
+      s = Math.max.apply(null, val);
+      return s;
+      break;
+    case 'sumby':
+      cc = []
+      s = val.reduce(function(a, b, c, d) {
+        //console.log("COLUMNS ",mainTable.cell(c,0).data());
+        cc.push(mainTable.cell((c+i),0).data());
+
+        return a + b;
+      }, 0);
+      //console.log("CC ",$.uniqueSort(cc));
+      cc=$.uniqueSort(cc);
+      if(cc.length>1){
+        return "---";
+      }else{
+        return s;
+      }
+
+     //console.log("---------------------------");
+      //s=parseFloat(s/s.length);
+
+      break;
+    default:
+      return 0;//"operazione non supportata";
+
+  }
+}
+
+function formatNumber(type, number) {
+  switch (type) {
+    case 'FLOAT':
+      return parseFloat(number).toFixed(2)
+      break;
+    case 'INTEGER':
+      return parseInt(number);
+      break;
+    default:
+
+  }
+
+}
+</script>
+
+</html>
