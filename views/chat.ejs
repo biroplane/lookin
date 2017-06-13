@@ -1,0 +1,16 @@
+<div class="chatDiscussion">
+  <ul>
+  <% for(var i=0; i<discussion.length; i++) {%>
+     <li class="chatMessage">
+        <div class="chatBlock">
+          <div class="picture"><i class="fa fa-user-circle fa-3x" aria-hidden="true"></i><span class="sender"><%= discussion[i].MITTENTE %></span></div>
+          <div class="message">
+            <%= discussion[i].MSG %>
+            <div class="datetime"><%= discussion[i].DATA_ORA %></div>
+          </div>
+
+        </div>
+      </li>
+  <% } %>
+  </ul>
+</div>

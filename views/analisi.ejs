@@ -12,15 +12,17 @@
 
   <!-- <link rel="stylesheet" href="./css/bootstrap-table.min.css"> -->
 
+
+
   <link rel="stylesheet" href="/css/pace.css">
   <link rel="stylesheet" href="/css/datatables.min.css" />
   <link rel="stylesheet" href="/css/jquery-ui.min.css">
   <!-- <link rel="stylesheet" href="./css/jquery-ui.structure.min.css"> -->
-  <link rel="stylesheet" href="/css/bootstrap-select.min.css">
-  <link rel="stylesheet" href="/css/datatables.min.css">
-  <link rel="stylesheet" href="/css/daterangepicker.css">
+  <link rel="stylesheet" href="/css/bootstrap-select.min.css"/>
+  <link rel="stylesheet" href="/css/datatables.min.css" />
+  <link rel="stylesheet" href="/css/datepicker.min.css">
   <link rel="stylesheet" href="/css/summernote.css" />
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css" />
   <script>
     // var filters={};
     // const {ipcRenderer}=require('electron')
@@ -47,16 +49,16 @@
   <script src="/js/bootstrap-editable.js"></script>
   <script src="/js/jszip.min.js"></script>
   <script src="/js/moment.js"></script>
-  <script src="/js/daterangepicker.js"></script>
+  <script src="/js/datepicker.min.js"></script>
+  <script src="/js/datepicker.en.js"></script>
+  <!-- <script src="/js/daterangepicker.js"></script> -->
   <script src="/js/dtplugins.js"></script>
   <script src="/js/filterByText.js"></script>
-  <script src="/js/summernote.min.js"></script>
 
+  <script src="/js/summernote.min.js"></script>
 </head>
 
 <body>
-
-
   <div class="container-fluid">
 
 
@@ -92,17 +94,17 @@
         </div>
         <div class="modal-body">
           <form action="#">
-            <!-- <div class="container-fluid">
-
+            <div class="container-fluid">
+              <div class="form-group ">
 
                 <div class="input-group margin-bottom-sm col-xs-7">
 
                   <input class="form-control" type="text" placeholder="search">
                   <span class="input-group-addon"><i class="fa fa-search fa-fw"></i></span>
                 </div>
-                <div class="input-group input-daterange margin-bottom-sm col-xs-4"><input type="text" name="daterange" class="form-control" data-language="en" data-date-format="yyyy-mm-dd" data-min-view="days" data-range="false" value=""></div>
-
-            </div> -->
+                <div class="input-group input-daterange margin-bottom-sm col-xs-5"><input type="text" name="daterange" class="form-control" data-language="en" data-date-format="yyyy-mm-dd" data-min-view="days" data-range="false" value=""></div>
+              </div>
+            </div>
             <div class="container-fluid">
               <div class="form-group ">
                 <label for="elencomessaggi"><i class="fa fa-file-text-o" aria-hidden="true"></i> Read Notes</label>
@@ -135,14 +137,17 @@
   var partials = new Array();
   var data = {};
   var viewname;
-
+  var datepicker;
+  //console.log(<%- report.data %>);
+  // alldata=<%- JSON.parse(JSON.stringify(report,null,2)) %>;
   columnsData = <%- JSON.parse(JSON.stringify(report.data,null,2)) %>;
   //console.log(<%- JSON.parse(JSON.stringify(report.data)) %>);
   columnsData = columnsData[0];
-  columns = columnsData.columns;
-  viewname = columnsData.nome;
-  querystring = <%- JSON.stringify(query,null,2) %>
- //console.log("CARICATO ", viewname);
+  columns = columnsData.views[0].columns;
+  viewname="<%=report.viewname%>";
+  console.log("COLS ", columnsData);
+
+
   newcol = [];
 
   var selectMyRows;
@@ -152,15 +157,17 @@
 
     switch (val.type) {
       case 'STRING':
+      case 'TEXT':
       case 'FILTER':
       case 'VARCHAR':
         cname = 'text-left';
         break;
-      case 'DATE':
-        cname = 'text-center';
-        break;
       case 'NOTE':
-        cname = "text-center msgtd";
+        cname= 'text-left notefield';
+        break
+      case 'DATE':
+      case 'DATA':
+        cname = 'text-center';
         break;
       default:
         cname = 'text-right';
@@ -178,14 +185,10 @@
     //newcol.push({"data":v.toString(),type:"text"});
     //console.log("TIPO DATO COLONNA ",newcol[key].type);
   })
-
   //console.log(" COLONNE ", columns.length, " NEW COL ",newcol);
   data.columns = newcol;
 
   $().ready(function() {
-    // $(window).on('resize', function() {
-    //   $('#dataTable').DataTable().columns.adjust().draw();
-    // })
     $("#textmessage").summernote({
       height: 150, // set editor height
       minHeight: 120, // set minimum height of editor
@@ -202,15 +205,15 @@
       //e.preventDefault();
 
       var id=$(this).data(id);
-     //console.log("CLICK",id);
-      updateModal(id.id,this);
-      //$('.modal-body #elencomessaggi').html("<h2>MESSAGGIO: "+id.id+"</h2>")
+      console.log("CLICK",id.reference);
+      updateModal(id);
+      $('.modal-body #elencomessaggi').html("<h2>MESSAGGIO: "+id.id+"</h2>")
     })
     /*-------------------*/
     $("footer").slideUp();
 
     $(document).on('show.bs.modal','#chatModal',function (e) {
-     //console.log("MOSTRO LA FINESTRA", e);
+      console.log("MOSTRO LA FINESTRA", e);
       // datepicker = $('input[name="daterange"]').datepicker({
       //   language: "en",
       //   minView: 'day',
@@ -220,26 +223,26 @@
       //   maxDate: new Date(),
       //   position: "top left"
       // }).data('datepicker')
-
     })
-    $("footer").slideUp();
+
+
 
     //TITOLO
     currentview = viewname;
-    tit = viewname.toString().toLowerCase().split("_");
-    stor = ($.inArray('stor', tit) >= 0) ? ' storico' : '';
-    //ddate=(datalog==true)?' from <i>'+moment(datalog).format("DD MMM YYYY")+"</i>" :'';
-    var qs = '';
-    if (querystring != '' && querystring != null && querystring.length > 0) {
-      qs += '<h4>FILTERED BY ';
-      for (var q in querystring) {
-        if (querystring[q] != "" && querystring[q] != '_') {
-          qs += q + ' - ' + querystring[q] + " ";
-        }
-      }
-      qs += '</h4>';
-    }
-    $('.maintitle').html("Displaying: <b>" + tit[2] + stor + "</b> report, Grouped by <b>" + tit[(tit.length - 1)] + "</b><br />" + qs /*+ddate*/ )
+    // tit = '';//viewname.toString().toLowerCase().split("_") ||  viewname;
+    // stor = ($.inArray('stor', tit) >= 0) ? ' storico' : '';
+    // //ddate=(datalog==true)?' from <i>'+moment(datalog).format("DD MMM YYYY")+"</i>" :'';
+    // var qs = '';
+    // if (querystring != '' && querystring != null && querystring.length > 0) {
+    //   qs += '<h4>FILTERED BY ';
+    //   for (var q in querystring) {
+    //     if (querystring[q] != "" && querystring[q] != '_') {
+    //       qs += q + ' - ' + querystring[q] + " ";
+    //     }
+    //   }
+    //   qs += '</h4>';
+    // }
+    // $('.maintitle').html("Displaying: <b>" + tit[2] + stor + "</b> report, Grouped by <b>" + tit[(tit.length - 1)] + "</b><br />" + qs /*+ddate*/ )
 
 
     var tablefooter = '';
@@ -256,13 +259,13 @@
     tablefooter = '' + totalfooter + partialfooter + '';
 
     //console.log("VIEW DA CHIAMARE ",viewname);
-    gf = '';
-    for (var f in querystring) {
-      if (querystring[f] != null && querystring[f] != '') {
-        gf += f + '=' + querystring[f] + '&';
-
-      }
-    }
+    // gf = '';
+    // for (var f in querystring) {
+    //   if (querystring[f] != null && querystring[f] != '') {
+    //     gf += f + '=' + querystring[f] + '&';
+    //
+    //   }
+    // }
     mainTable = $('#dataTable').DataTable({
 
 
@@ -336,11 +339,12 @@
             //console.log("SELECT BOX IN HEADER", $('.partial th').eq(idx));
             name = columns[idx].nome;
             id = name;
-            var select = $('<select class="selectpicker unique show-tick" multiple title=" "  data-actions-box="false" data-live-search="true" name="' + name + '" id="' + name + '"><option data-hidden="true"></option></select>')
+            var select = $('<select class="selectpicker unique show-tick" multiple title="' + '' +
+                '"  data-actions-box="true" data-live-search="true" name="' + name + '" id="' + name + '"><option data-hidden="true"></option></select>')
               .appendTo($('.partial th').eq(idx).empty())
               .on('change', function(e) {
                 e.preventDefault();
-               //console.log("CERCA ", $(this).val());
+                //console.log("CERCA ", $(this).val());
                 var sv = $(this).val()
                 val = '';
                 for (var s in sv) {
@@ -427,8 +431,64 @@
       //   $('#dataTable').DataTable().columns.adjust().draw()
       // },
       drawCallback: function() {
-        //console.log("DRAW! ");
-        //sumSameColumnValues($.parseHTML($('.dataTable>tbody.ui-selectable').html()))
+        var api = this.api();
+        var rows = api.rows({page: 'current'}).nodes();
+        var last = null;
+        var colonne = api.rows(0).data().length;
+        var totale = new Array();
+        totale['Totale'] = new Array();
+        var groupid = -1;
+        var subtotale = new Array();
+        var idx = api.column('CUSTOMER:name').index();
+
+        api.column(idx, {
+          page: 'current'
+        }).data().each(function(group, i) {
+          if (last !== group) {
+            groupid++;
+            $(rows).eq(i).before(
+              '<tr class="group"><td colspan="3">&nbsp;</td><td colspan="5">' + group + '</td></tr>'
+            );
+            last = group;
+          }
+
+
+          val = api.row(api.row($(rows).eq(i)).index()).data(); //current order index
+          $.each(val, function(index2, val2) {
+            if (typeof subtotale[groupid] == 'undefined') {
+              subtotale[groupid] = new Array();
+            }
+            if (typeof subtotale[groupid][index2] == 'undefined') {
+              subtotale[groupid][index2] = 0;
+            }
+            if (typeof totale['Totale'][index2] == 'undefined') {
+              totale['Totale'][index2] = 0;
+            }
+
+            valore =val2;// Number(val2.replace('€', "").replace('.', "").replace(',', "."));
+            subtotale[groupid][index2] += valore;
+            totale['Totale'][index2] += valore;
+          });
+
+
+
+        });
+        $('tbody').find('.group').each(function(i, v) {
+          var rowCount = $(this).nextUntil('.group').length;
+          $(this).find('td:eq(1)').append($('<span />', {
+            'class': 'rowCount-grid'
+          }).append($('<b />', {
+            'text': ' (' + rowCount + ')'
+          })));
+          var subtd = '';
+          for (var a = 8; a < colonne; a++) {
+            subtd += '<td>AAA' + subtotale[i][a] + ' OUT OF ' + totale['Totale'][a] + ' (' + Math.round(subtotale[i][a] * 100 / totale['Totale'][a], 2) + '%) ' + '</td>';
+          }
+
+          $(this).append(subtd);
+          console.log("SUBTD ",$(this),subtd);
+        });
+
       },
       // columnDefs: [{
       //   "visible": true,
@@ -463,7 +523,7 @@
       //buttons: true,
       ajax: {
         type: 'GET',
-        url: 'http://localhost:3000/viewdata/' + currentview + '?' + gf,
+        url: 'http://localhost:3000/analitycs/'+currentview,
         dataType: 'json',
 
       },
@@ -494,8 +554,8 @@
         ,
       "dom": "<'row'<'col-sm-12'B>><'row'<'col-sm-12'tr>><'row'<'col-sm-5'Bl><'col-sm-7'p>>",
       "lengthMenu": [
-        [10, 25, 50, 100,200,-1],
-        [10, 25, 50,100,200,"All"]
+        [10, 25, 50, 100, 200, -1],
+        [10, 25, 50, 100, 200, "All"]
       ],
       "language": {
         "decimal": ",",
@@ -550,8 +610,8 @@
       //console.log("CERCAAAAAAAAA", $(this).parent().index(), "VAL ", $(this).val());
       $('#dataTable').DataTable().column($(this).parent().index() + ':visible').search($(this).val()).draw();
     });
-    $('#dataTable').on('length.dt',function (e,settings,len) {
-     //console.log("CAMBIO LUNGHEZZA ",e,settings,len);
+    $('#dataTable').on('length.dt', function(e, settings, len) {
+      //console.log("CAMBIO LUNGHEZZA ",e,settings,len);
       sumbyAll();
     })
     $('.dataTable').on('shown.bs.select', 'select.selectpicker', function(e) {
@@ -577,102 +637,47 @@
     });
     $("#dataTable").addClass("selezionabile");
     var prev = -1;
-     selectMyRows=$(".selezionabile>tbody").selectable({
-      filter: "tr:not(.group)",
-      cancel:"td.msgtd",
-
-      selecting: function(e, ui) {
-        var curr = $(ui.selecting.tagName, e.target).index(ui.selecting);
-        if (e.shiftKey && prev > -1) {
-          //console.log(prev, curr, Math.min(prev,curr));
-          $(ui.selecting.tagName, e.target).slice(Math.min(prev, curr), 1 + Math.max(prev, curr)).addClass('ui-selected')
-          prev = -1;
-        } else {
-          prev = curr;
-        }
-        //console.log("CAMBIO SELEZIONE SU SELECTING");
-      },
-      selected: function(event, ui) {
-        //console.log("EVENT ", event," UI ",ui);
-        //$('tr.ui-selected').first().clone().appendTo('.content');
-        //$("footer").slideDown('slow');
-        //$('.content td').first().html("EVENT "+ event+" UI "+ui)
-        //console.log("CAMBIO SELEZIONE SU SELECTED");
-
-      },
-      start: function(event, ui) {
-
-        $(event.target).toggleClass('ui-selected');
-        //$(".content").empty();
-        //$('table tbody tr').first().clone().appendTo('.content');
-
-      },
-      stop: function(event, ui) {
-
-        oneColumnOp($('#dataTable tr.ui-selected'), -1)
-        //console.log("POSSO DARTI QUESTO",this);
-        sumSameColumnValues(this)
-        sumbyAll();
-        sumAllColum(10);
-        // sv=mainTable.column('SALES_VAL:name').index()
-        // svl=mainTable.column('SALES_VAL_L:name').index()
-        //
-        // sm=mainTable.column('SALES_MARK:name').index()
-        // sml=mainTable.column('SALES_MARK_L:name').index()
-        //
-        // vr=mainTable.column('VALR:name').index()
-        // pr=mainTable.column('PROF:name').index();
-        // mk=mainTable.column('MARK:name').index();
-        // mkl=mainTable.column('MARK_L:name').index();
-        //
-        // v1=parseFloat($('tr.total th').eq(svl).text().split(".").join(''));
-        // v2=parseFloat($('tr.total th').eq(sv).text().split(".").join(''));
-        //
-        // p1=parseFloat($('tr.total th').eq(sml).text().split(".").join(''))
-        // p2=parseFloat($('tr.total th').eq(sm).text().split(".").join(''))
-        //
-        // tvr=((v2/v1)-1)*100;
-        // tvr=formatNumber(columns[vr].type,tvr)
-        // tvr=thousandsSeparator(tvr)
-        // $('tr.total th').eq(vr).empty().html(tvr)
-        //
-        //
-        // tpr=((p2/p1)-1)*100;
-        // tpr=formatNumber(columns[pr].type,tpr)
-        // tpr=thousandsSeparator(tpr)
-        // $('tr.total th').eq(pr).empty().html(tpr)
-        //
-        // tmk=((v2/(v2-p2))-1)*100
-        // tmk=formatNumber(columns[mk].type,tmk)
-        // tmk=thousandsSeparator(tmk)
-        // $('tr.total th').eq(mk).empty().html(tmk)
-        //
-        // tmkl=((v1/(v1-p1))-1)*100
-        // tmkl=formatNumber(columns[mkl].type,tmkl)
-        // tmkl=thousandsSeparator(tmkl)
-        // $('tr.total th').eq(mkl).empty().html(tmkl)
-        //
-        // // TOTALI
-        // tv1=parseFloat($('tr.partial th').eq(svl).text().split(".").join(''));
-        // tv2=parseFloat($('tr.partial th').eq(sv).text().split(".").join(''));
-        //
-        // tp1=parseFloat($('tr.partial th').eq(sml).text().split(".").join(''))
-        // tp2=parseFloat($('tr.partial th').eq(sm).text().split(".").join(''))
-        //
-        // ttmk=thousandsSeparator(formatNumber(columns[mk].type,(((tv2/(tv2-tp2))-1)*100)))
-        // $('tr.partial th').eq(mk).empty().html(ttmk)
-        //
-        // ttmkl=thousandsSeparator(formatNumber(columns[mkl].type,(((tv1/(tv1-tp1))-1)*100)))
-        // $('tr.partial th').eq(mkl).empty().html(ttmkl)
-        //
-        // ttvr=thousandsSeparator(formatNumber(columns[vr].type,(1-(tv1/tv2))*100));
-        // $('tr.partial th').eq(vr).empty().html(ttvr)
-        //
-        // ttpr=thousandsSeparator(formatNumber(columns[pr].type,(1-(tp1/tp2))*100));
-        // $('tr.partial th').eq(pr).empty().html(ttpr)
-      }
-
-    });
+    // selectMyRows = $(".selezionabile>tbody").selectable({
+    //   filter: "tr:not(.group)",
+    //   cancel:"td.note",
+    //
+    //   selecting: function(e, ui) {
+    //     var curr = $(ui.selecting.tagName, e.target).index(ui.selecting);
+    //     if (e.shiftKey && prev > -1) {
+    //       //console.log(prev, curr, Math.min(prev,curr));
+    //       $(ui.selecting.tagName, e.target).slice(Math.min(prev, curr), 1 + Math.max(prev, curr)).addClass('ui-selected')
+    //       prev = -1;
+    //     } else {
+    //       prev = curr;
+    //     }
+    //     //console.log("CAMBIO SELEZIONE SU SELECTING");
+    //   },
+    //   selected: function(event, ui) {
+    //     //console.log("EVENT ", event," UI ",ui);
+    //     //$('tr.ui-selected').first().clone().appendTo('.content');
+    //     //$("footer").slideDown('slow');
+    //     //$('.content td').first().html("EVENT "+ event+" UI "+ui)
+    //     //console.log("CAMBIO SELEZIONE SU SELECTED");
+    //
+    //   },
+    //   start: function(event, ui) {
+    //
+    //     $(event.target).toggleClass('ui-selected');
+    //     //$(".content").empty();
+    //     //$('table tbody tr').first().clone().appendTo('.content');
+    //
+    //   },
+    //   stop: function(event, ui) {
+    //
+    //     oneColumnOp($('#dataTable tr.ui-selected'), -1)
+    //     //console.log("POSSO DARTI QUESTO",this);
+    //     sumSameColumnValues(this)
+    //     //sumbyAll();
+    //     sumAllColum(10);
+    //
+    //   }
+    //
+    // });
     //});
     // $('#dataTable').DataTable({
     //   data:data.data,
@@ -682,75 +687,77 @@
     //})
 
   });
-  function sumAllColum(limit){
-    var columnCount=mainTable.settings().columns()[0].length;
-    var firstColumn=mainTable.column(0).data().length;
-   //console.log("COLUMN COUNT",columnCount,firstColumn);
+
+  function sumAllColum(limit) {
+    var columnCount = mainTable.settings().columns()[0].length;
+    var firstColumn = mainTable.column(0).data().length;
+    //console.log("COLUMN COUNT",columnCount,firstColumn);
   }
-function sumbyAll(){
- //console.log("CHIAMATA FUNZIONE");
-  if(mainTable.column('SALES_VAL:name').index()>0){
-  sv=mainTable.column('SALES_VAL:name').index()
-  svl=mainTable.column('SALES_VAL_L:name').index()
 
-  sm=mainTable.column('SALES_MARK:name').index()
-  sml=mainTable.column('SALES_MARK_L:name').index()
+  function sumbyAll() {
+    //console.log("CHIAMATA FUNZIONE");
 
-  vr=mainTable.column('VALR:name').index()
-  pr=mainTable.column('PROF:name').index();
-  mk=mainTable.column('MARK:name').index();
-  mkl=mainTable.column('MARK_L:name').index();
+    sv = mainTable.column('SALES_VAL:name').index()
+    svl = mainTable.column('SALES_VAL_L:name').index()
 
-  v1=parseFloat($('tr.total th').eq(svl).text().split(".").join(''));
-  v2=parseFloat($('tr.total th').eq(sv).text().split(".").join(''));
+    sm = mainTable.column('SALES_MARK:name').index()
+    sml = mainTable.column('SALES_MARK_L:name').index()
 
-  p1=parseFloat($('tr.total th').eq(sml).text().split(".").join(''))
-  p2=parseFloat($('tr.total th').eq(sm).text().split(".").join(''))
+    vr = mainTable.column('VALR:name').index()
+    pr = mainTable.column('PROF:name').index();
+    mk = mainTable.column('MARK:name').index();
+    mkl = mainTable.column('MARK_L:name').index();
 
-  tvr=((v2/v1)-1)*100;
-  tvr=formatNumber(columns[vr].type,tvr)
-  tvr=thousandsSeparator(tvr)
-  $('tr.total th').eq(vr).empty().html(tvr)
+    v1 = parseFloat($('tr.total th').eq(svl).text().split(".").join(''));
+    v2 = parseFloat($('tr.total th').eq(sv).text().split(".").join(''));
+
+    p1 = parseFloat($('tr.total th').eq(sml).text().split(".").join(''))
+    p2 = parseFloat($('tr.total th').eq(sm).text().split(".").join(''))
+
+    tvr = ((v2 / v1) - 1) * 100;
+    tvr = formatNumber(columns[vr].type, tvr)
+    tvr = thousandsSeparator(tvr)
+    $('tr.total th').eq(vr).empty().html(tvr)
 
 
-  tpr=((p2/p1)-1)*100;
-  tpr=formatNumber(columns[pr].type,tpr)
-  tpr=thousandsSeparator(tpr)
-  $('tr.total th').eq(pr).empty().html(tpr)
+    tpr = ((p2 / p1) - 1) * 100;
+    tpr = formatNumber(columns[pr].type, tpr)
+    tpr = thousandsSeparator(tpr)
+    $('tr.total th').eq(pr).empty().html(tpr)
 
-  tmk=((v2/(v2-p2))-1)*100
-  tmk=formatNumber(columns[mk].type,tmk)
-  tmk=thousandsSeparator(tmk)
-  $('tr.total th').eq(mk).empty().html(tmk)
+    tmk = ((v2 / (v2 - p2)) - 1) * 100
+    tmk = formatNumber(columns[mk].type, tmk)
+    tmk = thousandsSeparator(tmk)
+    $('tr.total th').eq(mk).empty().html(tmk)
 
-  tmkl=((v1/(v1-p1))-1)*100
-  tmkl=formatNumber(columns[mkl].type,tmkl)
-  tmkl=thousandsSeparator(tmkl)
-  $('tr.total th').eq(mkl).empty().html(tmkl)
+    tmkl = ((v1 / (v1 - p1)) - 1) * 100
+    tmkl = formatNumber(columns[mkl].type, tmkl)
+    tmkl = thousandsSeparator(tmkl)
+    $('tr.total th').eq(mkl).empty().html(tmkl)
 
-  //TOTALI
-  tv1=parseFloat($('tr.partial th').eq(svl).text().split(".").join(''));
-  tv2=parseFloat($('tr.partial th').eq(sv).text().split(".").join(''));
+    // TOTALI
+    tv1 = parseFloat($('tr.partial th').eq(svl).text().split(".").join(''));
+    tv2 = parseFloat($('tr.partial th').eq(sv).text().split(".").join(''));
 
-  tp1=parseFloat($('tr.partial th').eq(sml).text().split(".").join(''))
-  tp2=parseFloat($('tr.partial th').eq(sm).text().split(".").join(''))
+    tp1 = parseFloat($('tr.partial th').eq(sml).text().split(".").join(''))
+    tp2 = parseFloat($('tr.partial th').eq(sm).text().split(".").join(''))
 
-  ttmk=thousandsSeparator(formatNumber(columns[mk].type,(((tv2/(tv2-tp2))-1)*100)))
-  $('tr.partial th').eq(mk).empty().html(ttmk)
+    ttmk = thousandsSeparator(formatNumber(columns[mk].type, (((tv2 / (tv2 - tp2)) - 1) * 100)))
+    $('tr.partial th').eq(mk).empty().html(ttmk)
 
-  ttmkl=thousandsSeparator(formatNumber(columns[mkl].type,(((tv1/(tv1-tp1))-1)*100)))
-  $('tr.partial th').eq(mkl).empty().html(ttmkl)
+    ttmkl = thousandsSeparator(formatNumber(columns[mkl].type, (((tv1 / (tv1 - tp1)) - 1) * 100)))
+    $('tr.partial th').eq(mkl).empty().html(ttmkl)
 
-  ttvr=thousandsSeparator(formatNumber(columns[vr].type,(1-(tv1/tv2))*100));
-  $('tr.partial th').eq(vr).empty().html(ttvr)
+    ttvr = thousandsSeparator(formatNumber(columns[vr].type, (1 - (tv1 / tv2)) * 100));
+    $('tr.partial th').eq(vr).empty().html(ttvr)
 
-  ttpr=thousandsSeparator(formatNumber(columns[pr].type,(1-(tp1/tp2))*100));
-  $('tr.partial th').eq(pr).empty().html(ttpr)
+    ttpr = thousandsSeparator(formatNumber(columns[pr].type, (1 - (tp1 / tp2)) * 100));
+    $('tr.partial th').eq(pr).empty().html(ttpr)
 
-  //console.log(tmkl,tv1,tv2,tp1,tp2,ttmk,ttmkl,ttvr,ttpr);
- //console.log("TV2 ",$('tr.partial th').eq(sv));
- }
-}
+    //console.log(tmkl,tv1,tv2,tp1,tp2,ttmk,ttmkl,ttvr,ttpr);
+    //console.log("TV2 ",$('tr.partial th').eq(sv));
+  }
+
   function stopPropagation(evt) {
     if (evt.stopPropagation !== undefined) {
       evt.stopPropagation();
@@ -777,13 +784,13 @@ function sumbyAll(){
   }
 
   function sumSameColumnValues(righe) {
-   //console.log("HELLOG!!! ",righe);
+    //console.log("HELLOG!!! ",righe);
     //console.info(typeof(righe))
     var selected = $(righe).find('.ui-selected')
 
     var first = selected.first().find('td').first().text();
 
-   //console.log("FIRST",first);
+    //console.log("FIRST",first);
     operationsArray = new Array();
     //trArray=new Array($(tr).children('td').length);
     $(righe).find('tr').each(function(i, tr) {
@@ -813,15 +820,15 @@ function sumbyAll(){
     });
     //console.log("ECCO L'ARRAY DEFINITIVO ",operationsArray);
     $(operationsArray).each(function(e) {
-    // //console.log("OPERA", e);
+      // //console.log("OPERA", e);
       if (columns[e].type == 'INTEGER' || columns[e].type == 'FLOAT') {
         if (columns[e].operations != null) {
-        var sum = operation(columns[e].operations[0].value.toLowerCase(), this)
-       //console.log("SOMMA ",columns[e].operations[0].value.toLowerCase());
-        sum = formatNumber(columns[e].type, sum)
-        sum = thousandsSeparator(sum)
-        $('.dataTable tr.partial').find('th').eq(e).empty().html(sum);
-      }
+          var sum = operation(columns[e].operations[0].value.toLowerCase(), this)
+          //console.log("SOMMA ",columns[e].operations[0].value.toLowerCase());
+          sum = formatNumber(columns[e].type, sum)
+          sum = thousandsSeparator(sum)
+          $('.dataTable tr.partial').find('th').eq(e).empty().html(sum);
+        }
       }
     })
   }
@@ -881,29 +888,27 @@ function sumbyAll(){
       //op = $("table thead th").eq(j).find("select").val();
       if (columns[j].operations != undefined) {
 
-          ////console.log("OPX ", columns[j].operations[0].value);
-          op = columns[j].operations[0].value.toLowerCase()
+        ////console.log("OPX ", columns[j].operations[0].value);
+        op = columns[j].operations[0].value.toLowerCase()
 
 
-      ////console.log("-------OPERAZIONI--------");
-      ////console.log("-------------------------");
-      //console.log(operation(op, tmpArray[j]), op, tmpArray[j]);
-      //res = (!isNaN(operation(op, tmpArray[j],group.index()))) ? operation(op, tmpArray[j],group.index()) : '';
-      if (columns[j].operations[0].value != "SUMAVG") {
-        if (columns[j].operations != null) {
-        res = operation(op, tmpArray[j], group.index());
-      }
-      }
-      //res = parseFloat(operation(op, tmpArray[j])).toFixed(2);
-      //console.log("COLONNA ",columns[j].type,res,tmpArray[j]);
-      if (columns[j].type == 'INTEGER' || columns[j].type == 'FLOAT') {
-        if (op != 'sumby' || res > 0) {
-          res = formatNumber(columns[j].type, res);
-          res = thousandsSeparator(res)
+        ////console.log("-------OPERAZIONI--------");
+        ////console.log("-------------------------");
+        //console.log(operation(op, tmpArray[j]), op, tmpArray[j]);
+        //res = (!isNaN(operation(op, tmpArray[j],group.index()))) ? operation(op, tmpArray[j],group.index()) : '';
+        if (columns[j].operations[0].value != "SUMAVG") {
+          res = operation(op, tmpArray[j], group.index());
         }
-        $(".dataTable thead .total th").eq(j).empty().html(res);
+        //res = parseFloat(operation(op, tmpArray[j])).toFixed(2);
+        //console.log("COLONNA ",columns[j].type,res,tmpArray[j]);
+        if (columns[j].type == 'INTEGER' || columns[j].type == 'FLOAT') {
+          if (op != 'sumby' || res > 0) {
+            res = formatNumber(columns[j].type, res);
+            res = thousandsSeparator(res)
+          }
+          $(".dataTable thead .total th").eq(j).empty().html(res);
+        }
       }
-    }
       //console.log("-------------------------");
     })
     // }
@@ -918,11 +923,23 @@ function sumbyAll(){
     //console.log("ANALIZZZO LA COLONNA",column.type);
     switch (column.type) {
       case 'string':
+      case 'STRING':
+      case 'TEXT':
       case 'VARCHAR':
       case '':
       case 'WEEK':
         ret = function(data, type, row) {
           return data;
+        }
+        break;
+      case 'NOTE':
+        ret = function(data, type, row){
+          id=data.split("|");
+          msg=id[1].split("-");
+           id=id[0];
+          //console.log("DATA",type,row);
+          return '<a href="#chatModal" role="button" class="btn message message-orange" data-toggle="modal" data-target="#chatModal" data-id="'+id+'" data-reference="'+id+'">'+msg[0]+'</a> | <a tabindex="0" href="#" role="button"><button type="button" class="btn message message-blue" data-toggle="modal" data-target="#chatModal" data-id="'+id+'">'+msg[1]+'</button></a>';
+          //return data;
         }
         break;
       case 'MONTH':
@@ -938,18 +955,6 @@ function sumbyAll(){
           return data;
         }
         break;
-
-        case 'NOTE':
-          ret = function(data, type, row){
-            //return data;
-            id=data.split("|") || data;
-            msg=row.CUST.split("-");
-             id=id[0];
-            //console.log("DATA",type,row);
-            return '<a href="#chatModal" role="button" class="btn message message-orange" data-toggle="modal" data-target="#chatModal" data-id="'+msg[0]+'"><i class="fa fa-comment" aria-hidden="true"></i></a> | <a href="#chatModal" role="button" class="btn message message-blue" data-toggle="modal" data-target="#chatModal" data-id="'+msg[0]+'"><i class="fa fa-comment" aria-hidden="true"></i></a>';
-            //return data;
-          }
-          break;
       case "DATE":
       case 'date':
       case 'day':
@@ -1014,7 +1019,7 @@ function sumbyAll(){
         cc = []
         s = val.reduce(function(a, b, c, d) {
           //console.log("ABC",a,b,c);
-         //console.log("COLUMNS ",i,mainTable.cell((c),0).data());
+          //console.log("COLUMNS ",i,mainTable.cell((c),0).data());
           //console.log();
           cc.push(mainTable.cell((c + i), 0).data());
 
@@ -1035,7 +1040,7 @@ function sumbyAll(){
       case 'sumavg':
         cc = []
         s = val.reduce(function(a, b, c) {
-         //console.log("SUM AVG ", a, b, c);
+          //console.log("SUM AVG ", a, b, c);
         })
         break
       default:
@@ -1043,25 +1048,22 @@ function sumbyAll(){
 
     }
   }
-  function updateModal(id, caller) {
-   //console.log("INVIO ID",arguments.callee.caller.toString(),caller);
-    var callto=$(caller).hasClass('message-blue')?'1':'0';
+  function updateModal(id) {
     $.ajax({
-      url: 'http://localhost:3000/messaggi/'+id+"/"+callto,
+      url: 'http://localhost:3000/messaggi/'+id,
       type: 'GET',
-      dataType: 'html'
+      dataType: 'json'
 
     })
     .done(function(data) {
-
-      $('#elencomessaggi').html(data)
+      console.log("success",data);
 
     })
-    .fail(function(err) {
-     //console.log("error",err);
+    .fail(function() {
+      console.log("error");
     })
     .always(function() {
-     //console.log("complete");
+      console.log("complete");
     });
 
 
@@ -1084,6 +1086,8 @@ function sumbyAll(){
       $(this).text($(this).text().replace(/(d)(?=(ddd)+(?!d))/g, "$1,"));
     })
   }
+
+
 </script>
 
 </html>

@@ -44,11 +44,21 @@
 </head>
 
 <body>
+  <nav class="navbar navbar-fixed-bottom">
+    <div class="container-fluid">
+      <div class="text-right infouser">
+        <p class="username"></p>
+        <div class="icon"><i class="fa fa-2x fa-user-circle-o" aria-hidden="true"></i></div>
+      </div>
+    </div>
 
+
+
+  </nav>
   <div class="container-fluid">
     <div class="row">
-      <div class="sync col-xs-4"><button class="btn btn-block"><i class="fa fa-refresh fa-fw" aria-hidden="true"></i> SYNC</button></div>
-      <div class="download col-xs-4"><button class="btn btn-block"><i class="fa fa-database" aria-hidden="true"></i> DOWNLOAD</button></div>
+      <div class="sync col-xs-4"><button class="btn btn-block"><i class="fa fa-database fa-fw" aria-hidden="true"></i> SYNC</button></div>
+      <div class="download col-xs-4 glow"><button class="btn btn-block"><i class="fa fa-refresh fa-fw" aria-hidden="true"></i> UPDATE <span class='newversion'></span></button></div>
       <div class="exit col-xs-4"><button class="btn btn-block"><i class="fa fa-power-off" aria-hidden="true"></i> EXIT</button></div>
     </div>
   </div>
@@ -58,17 +68,16 @@
       <ul class="nav nav-tabs" role="tablist">
         <li class=""><a href="#reporttab" role="tab" data-toggle="tab" data-node="report">REPORT</a></li>
         <li><a href="#administrationtab" role="tab" data-toggle="tab" data-node="report_acc">ADMINISTRATION</a></li>
+        <li><a href="#analisystab" role="tab" data-toggle="tab" data-node="report_any">ANALISYS</a></li>
 
       </ul>
     </div>
     <div class="tab-content">
       <div id="reporttab" class="tab-pane">
-
         <div class="row tables ">
           <div class="form-group col-xs-12">
-
             <br>
-            <select class="selectpicker reportselect" title="REPORT" data-live-search="true" name="report" id="report">
+            <select class="selectpicker reportselect" title="REPORT" data-live-search="false" name="report" id="report">
 
             </select>
           </div>
@@ -90,30 +99,49 @@
       <div id="administrationtab" class="tab-pane">
 
 
-          <div class="row tables ">
-            <div class="form-group col-xs-12">
+        <div class="row tables ">
+          <div class="form-group col-xs-12">
 
-              <br>
-              <select class="selectpicker reportselect" title="REPORT" data-live-search="true" name="report" id="report">
+            <br>
+            <select class="selectpicker reportselect" title="ADMINISTRATION" data-live-search="false" name="report" id="report">
 
               </select>
-            </div>
           </div>
-          <div class="row types ">
+        </div>
+        <div class="row types ">
 
+        </div>
+        <div class="row mainfilters no-gutters">
+        </div>
+        <!-- END MAINFILTER -->
+        <div class="row createview">
+          <div class="form-group">
+            <button class="btn btn-default btn-block"><i class="fa fa-rocket" aria-hidden="true"></i> GO</button>
           </div>
-          <div class="row mainfilters no-gutters">
-          </div>
-          <!-- END MAINFILTER -->
-          <div class="row createview">
-            <div class="form-group">
-              <button class="btn btn-default btn-block"><i class="fa fa-rocket" aria-hidden="true"></i> GO</button>
-            </div>
-          </div>
-
-
+        </div>
       </div>
+      <div id="analisystab" class="tab-pane">
+        <div class="row tables ">
 
+          <div class="form-group col-xs-12">
+
+            <br>
+            <select class="selectpicker reportselect" title="ANALISYS" data-live-search="false" name="report" id="report">
+
+              </select>
+          </div>
+        </div>
+        <div class="row types ">
+
+        </div>
+        <div class="row mainfilters no-gutters">
+        </div>
+        <div class="row createview">
+          <div class="form-group">
+            <button class="btn btn-default btn-block"><i class="fa fa-rocket" aria-hidden="true"></i> GO</button>
+          </div>
+        </div>
+      </div>
 
     </div>
 
@@ -150,7 +178,11 @@
       <div class="progress">
         <div class="progress-bar progress-bar-warning progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 1%">
         </div>
+
       </div>
+      <p class="remaining">
+
+      </p>
     </div>
 
   </div>
@@ -167,6 +199,7 @@
   const path = require('path')
   const url = require('url');
   var md5 = require('md5');
+  var sha1 = require('sha1');
   var fs = require('fs');
 
   // DATE VARS
@@ -177,15 +210,21 @@
   calendarview = 'days';
   datapicker = '';
   datafilter = '';
+  lastDate='';
+  ipcArg={};
   ////////////////////////
 
   const {
     BrowserWindow
   } = require('electron').remote;
+  const {
+    autoUpdater
+  } = require('electron').remote;
+
   let windows = [];
   global.config = {};
   global.report = {};
-  global.reportID=-1;
+  global.reportID = -1;
   var reportdatasend = {};
   const isOnline = require('is-online');
   var remote = require('electron').remote;
@@ -193,7 +232,7 @@
     dialog
   } = require('electron').remote;
   const DOCUMENTS = remote.app.getPath('documents');
-  //console.log(" DOCUMENTS FROM HTML ",DOCUMENTS);
+  //myLog(" DOCUMENTS FROM HTML ", DOCUMENTS);
 
   var logindata = {};
   var reportoption = '';
@@ -240,14 +279,38 @@
       });
       openFileConfig();
     } else {
-      //console.log("UTENTE NON LOGGATO");
+      ////myLog("UTENTE NON LOGGATO");
     }
   })
+  ipcRenderer.on('checkForDBResponse',(evt,arg)=>{
+   console.log("CONTROLLO RISPOSTA CHECKDB",arg);
+    if(arg==false){
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'Database Missing',
+        message: 'Seems that from last update, something hash changed. Lookin needs another file to be downloaded.\nWould You Download it?!',
+        buttons: ['Sure', 'No']
+      }, (buttonIndex) => {
+        if (buttonIndex === 0) {
+         console.log("PROCEDI CON IL Download");
+          $('.sync').trigger('click');
+        }else{
+         console.log("NIENTE DOWNLOAD");
+        }
 
+      })
+    }else{
+      //////////////////////
+    }
+  })
 
   ipcRenderer.on('wrongLogIn', (evt, arg) => {
     $('#loginform').effect("shake")
     $('#loginform input').val("")
+  })
+  ipcRenderer.on('updateAvailable', (evt, arg) => {
+    //alert("UPDATE AVAILABLE");
+    $('.download').show();
   })
   // var soapurl = "http://192.168.43.214/LookinWebservice/LookinWebService.asmx?wsdl&op=GetSyncString_AnaSupervisori";
   // var args = {
@@ -257,6 +320,9 @@
   var targetID
   $().ready(function() {
 
+    ipcRenderer.send('checkSoftwareUpdates', true);
+    $('.download').hide();
+    //$('.download .btn').addClass('glow');
     /* ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
      * ┃         _________   ___  ____        ┃
      * ┃        /_  __/ _ | / _ )/ __/        ┃
@@ -269,14 +335,22 @@
       var active = $(e.target).attr("data-node") // activated tab
       targetID = $(e.target).attr("href") // activated tab
       activeTab = active
-      //console.log("ACTIVE TAB",activeTab);
+     console.log("ACTIVE TAB", activeTab, config[activeTab]);
       //alert("CLICK SU TAB");
       reportOption(config[activeTab], $(targetID).find('.selectpicker'));
       $('.mainfilters').empty();
       $('.types').empty();
       $('.createview').hide();
+      $('.getanalisys').hide();
+
+      if(activeTab=='report_any'){
+        db='analytics.db';
+      }else{
+        db='lookin.db';
+      }
+      cambiaDB(db);
     });
-    ////console.log("TAB ", $('.nav li.active a'));
+    //////myLog("TAB ", $('.nav li.active a'));
     // activeTab = $('.nav li.active a');
 
     /*–––––––––––––––––––––––––––––––––––––––*/
@@ -293,11 +367,12 @@
       });
       openFileConfig();
     } else {
-      //console.log("UTENTE NON LOGGATO");
+      ////myLog("UTENTE NON LOGGATO");
     }
     $('div#syncBlock').hide();
     $('.mainfilters').hide();
     $('.createview').hide();
+    $('.getanalisys').hide();
 
     $('.container-fluid').on('resize', function() {
 
@@ -305,69 +380,91 @@
     })
 
     $('#loginbutton').on('click', function(e) {
+
       e.preventDefault()
       logindata.username = $('#inputEmail').val();
-      logindata.password = $('#inputPassword').val();
+      logindata.password = md5(sha1($('#inputPassword').val()));
+
       soapData = {};
-      if (fs.existsSync(path.join(DOCUMENTS, 'lookin', 'data', 'lookin.db'))) {
+      //myLog("ESISTE " + fs.existsSync(path.join(DOCUMENTS, 'lookin', 'lookin.db')))
+      if (fs.existsSync(path.join(DOCUMENTS, 'lookin', 'lookin.db')) === true) {
+
+
         $.ajax({
           dataType: "json",
           contentType: "application/json",
-          url: "http://localhost:3000/loguser/" + logindata.username + "/" + logindata.password,
+          url: path.join(DOCUMENTS, 'lookin', 'config.json'),
           type: "GET",
           //data:JSON.parse(JSON.stringify(logindata)),
           success: function(data) {
             //alert("INVIATO "+data);
-            //console.log("DATA RECIVED");
-            //console.log(data);
-
-            //console.log("USER CONFIG " + config.user.username + " SENT USERNAME " + data.username);
-            if (data.user) {
-              //alert("LOGIN OK!")
-              //console.log("CERCA ", data);
+            //myLog("DATA RECIVED"+ data);
+            if (data.app[0].user_name == logindata.username && data.app[0].psw == logindata.password) {
+              //myLog("LOGIN OK");
               ipcRenderer.send('setUserId', {
-                //name: data.user.NOMINATIVO,
-                //uid: data.user.ID_PROFILE,
-                user: data.user.USER_NAME
+                user: logindata.username
               })
+
               $('#backdrop').slideUp({
                 easing: "easeOutBounce",
                 duration: 1000
               });
               openFileConfig();
+              $.ajax({
+                url: 'http://localhost:3000/lastdate/',
+              })
+              .done(function(data) {
+                lastDate=data.LASTDATE;
+              })
+              .fail(function() {
+                console.log("error");
+              })
+              .always(function() {
+                console.log("complete");
+              });
+
             } else {
-              //alert("LOGIN ERRATO")
+              //myLog("LOGIN ERRATO");
               $('#loginform').effect("shake")
-              $('#loginform input').val("")
+              $('#loginform input').val("");
             }
+
           },
           error: function(a, b, c) {
-            //console.log(a, b, c);
+           console.log("ERRORE",a,b,c);
 
           }
-
+          //
         })
+        ipcRenderer.send('checkForDB',{db:'analytics.db'});
       } else {
-       //console.log("IL DATABASE NON ESISTE, LOG VIA SOAP");
-        dialog.showMessageBox({
-          type: "question",
+        //myLog("IL DATABASE NON ESISTE, LOG VIA SOAP");
+        var wantsToDownload = dialog.showMessageBox({
+          type: "warning",
           title: "First Access",
-          buttons: ["Ok", "Nope"],
+          buttons: ["Ok", "No, thank you"],
           detail: "You Need an internet connection to perform the download.\nIt may takes serveral minutes to complete the process..\nPlease wait until the software restarts.",
           message: "Seems that no db file was found.\nIt could be because it's your first access or someone deleted the files.\nWould you download them now?"
-        })
-        isOnline({
-          timeout: 500
-        }).then(online => {
-         //console.log("ONLINE STATUS", online);
-          if (online) {
-            soapData.user = logindata.username;
-            soapData.psw = logindata.password;
-            ipcRenderer.send('onSoapLogin', soapData)
-          } else {
-            dialog.showErrorBox('Connection Needed', 'LookIn needs a stable internet connection to conect to its services. Please connect to internet and try again')
+        }, function(res) {
+          //myLog("LA RISPOSTA è " + res);
+          if (res == 0) {
+            isOnline({
+              timeout: 500
+            }).then(online => {
+              //myLog("ONLINE STATUS", online);
+              if (online) {
+                soapData.user = logindata.username;
+                soapData.psw = logindata.password;
+                //myLog("INVIO DATA ", soapData, logindata.password);
+                ipcRenderer.send('onSoapLogin', soapData)
+              } else {
+                dialog.showErrorBox('Connection Needed', 'LookIn needs a stable internet connection to conect to its services. Please connect to internet and try again')
+              }
+            })
           }
         })
+        //myLog("WANTS TO DOWNLOAD ?",wantsToDownload);
+
       }
     })
     $('.sync').on('click', function(e) {
@@ -378,7 +475,10 @@
         }).then(online => {
           if (online) {
 
-            ipcRenderer.send("downloadDBFile", true);
+            ipcArg.user= logindata.username;
+            ipcArg.psw=logindata.password;
+            ipcArg.sData=lastDate;
+            ipcRenderer.send("downloadDBFile", ipcArg);
             $('div#syncBlock').show();
             //ipcRenderer.send("downloadDBFile",true);
           } else {
@@ -388,33 +488,36 @@
       }
     })
     $('.download').on('click', function(e) {
-      //ipcRenderer.send("download",true);
-
+      ipcRenderer.send("download", true);
+      console.log("UPDATE ",autoUpdater.checkForUpdates());
     })
 
-    $('.createview').on("click", 'button', function(e) {
-      //begin = $('.date-from').val() || moment().subtract(1, 'months').format("YYYY-MM-DD");
-      //terminate = $('.date-to').val() || moment().add(1, 'months').format("YYYY-MM-DD");
-      rid = $(targetID+' .reportselect option').eq(parseInt(reportID)+1).text().toUpperCase() + "_";
-      suppl = ($('#ACCB-BAR').find('.active').find('input').val()) ? $('#ACCB-BAR').find('.active').find('input').val() + '_' : '';
-      //   //
-      viewtype = ($('#ANA-STOR').find('.active').find('input').val()) ? $('#ANA-STOR').find('.active').find('input').val().toString().toUpperCase() + '_' : '';
-      whare = ($('#ALL-IMP-OLA').find('.active').find('input').val()) ? $('#ALL-IMP-OLA').find('.active').find('input').val().toString() + '_' : '';
-      period = $('#dates').find('.active').find('input').val() || '';
 
-      barsel = ($('#SEL-BAR').find('.active').find('input').val()) ? $('#SEL-BAR').find('.active').find('input').val().toString() + '_' : '';
-
-      var currentview = 'BFS_VIEW_' + rid + viewtype + suppl + whare + barsel + period;
+    $('.getanalisys').on("click", "button", function(e) {
+      e.preventDefault();
+      rid = $(targetID + ' .reportselect option').eq(parseInt(reportID) + 1).text().toUpperCase() + "_";
+      period = $(targetID + ' #dates').find('.active').find('input').val() || '';
+      var currentview = 'BFS_VIEW_' + rid +period;
+     console.log("DOPO IL CLICK CURRENTVIEW VALE ",currentview);
       currentview = (currentview.lastIndexOf("_") == (currentview.length - 1)) ? currentview.substring(0, currentview.length - 1) : currentview;
+      windows.push(new BrowserWindow({
+        width: 1300,
+        height: 800,
+        x: 500,
+        /* titleBarStyle: 'hidden-inset',*/
+        title: currentview
+      }))
+
       filters = {};
-      //console.log("CURRENT VIEW PRIMA DEL CICLO",currentview);
-      $('.mainfilters').each(function() {
+      var thisFilterTab = '#' + activeTab + ' .mainfilters';
+      //myLog("CURRENT VIEW PRIMA DEL CICLO", $(targetID), thisFilterTab);
+      $(targetID + ' .mainfilters').each(function() {
         $(this).find('select').each(function() {
           filters[$(this).attr('name')] = this.value;
         })
         $(this).find('input[name=daterange]').each(function() {
-          //console.log("AGGIUNGO LE DATE ", $(this).val());
-          //console.log("DATE PRESENTI",from,to);
+          //myLog("AGGIUNGO LE DATE ", $(this).val());
+          //myLog("DATE PRESENTI",from,to);
           datafilter = '';
           switch (period) {
             case "DAY":
@@ -434,22 +537,88 @@
               break;
           }
         })
-        if(activeTab!='report') datafilter="DATA"
+        if (activeTab != 'report') datafilter = "DATA"
         filters[datafilter] = from
         //filters[datafilter+'_TO']=to
       });
+     console.log("VIEWNAME ",currentview);
+      reportdatasend.viewname = currentview;
+      reportdatasend.data = JSON.stringify(getObjects(config[activeTab], 'nome', "IMPORT"))
+      reportdatasend.tabs = activeTab
+      var len = (windows.length - 1) > 0 ? windows.length - 1 : 0;
+
+      windows[len].loadURL("http://localhost:3000/analisyspage/"+currentview);
+      windows[len].on('closed', function(a, b, c) {
+        ////myLog("CHIUDO ", windows, a, b, c)
+        windows.splice(len, 1)
+      })
+      ipcRenderer.send('onCreateView', reportdatasend);
+    })
+    $('.createview').on("click", 'button', function(e) {
+
+      //begin = $('.date-from').val() || moment().subtract(1, 'months').format("YYYY-MM-DD");
+      //terminate = $('.date-to').val() || moment().add(1, 'months').format("YYYY-MM-DD");
+      rid = $(targetID + ' .reportselect option').eq(parseInt(reportID) + 1).text().toUpperCase() + "_";
+      suppl = ($(targetID + ' #ACCB-BAR').find('.active').find('input').val()) ? $(targetID + ' #ACCB-BAR').find('.active').find('input').val() + '_' : '';
+      //   //
+      viewtype = ($(targetID + ' #ANA-STOR').find('.active').find('input').val()) ? $(targetID + ' #ANA-STOR').find('.active').find('input').val().toString().toUpperCase() + '_' : '';
+      whare = ($(targetID + ' #ALL-IMP-OLA').find('.active').find('input').val()) ? $(targetID + ' #ALL-IMP-OLA').find('.active').find('input').val().toString() + '_' : '';
+      period = $(targetID + ' #dates').find('.active').find('input').val() || '';
+
+      barsel = ($(targetID + ' #SEL-BAR').find('.active').find('input').val()) ? $(targetID + ' #SEL-BAR').find('.active').find('input').val().toString() + '_' : '';
+
+      var currentview = 'BFS_VIEW_' + rid + viewtype + suppl + whare + barsel + period;
+      currentview = (currentview.lastIndexOf("_") == (currentview.length - 1)) ? currentview.substring(0, currentview.length - 1) : currentview;
+      filters = {};
+      var thisFilterTab = '#' + activeTab + ' .mainfilters';
+      //myLog("CURRENT VIEW PRIMA DEL CICLO", $(targetID), thisFilterTab);
+      $(targetID + ' .mainfilters').each(function() {
+        $(this).find('select').each(function() {
+          filters[$(this).attr('name')] = this.value;
+        })
+        $(this).find('input[name=daterange]').each(function() {
+          //myLog("AGGIUNGO LE DATE ", $(this).val());
+          //myLog("DATE PRESENTI",from,to);
+          datafilter = '';
+          switch (period) {
+            case "DAY":
+              datafilter = "DATA_LOG"
+              break;
+            case "WEEK":
+              datafilter = "WEEK"
+              break;
+            case "MONTH":
+              datafilter = "MONTH"
+              break;
+            case "YEAR":
+              datafilter = "YEAR"
+              break;
+            default:
+              datafilter = "DATA_LOG"
+              break;
+          }
+        })
+        if (activeTab != 'report') datafilter = "DATA"
+        filters[datafilter] = from
+        //filters[datafilter+'_TO']=to
+      });
+      //myLog("FILTRI DA VISUALIZZARE ", filters, currentview);
       //ipcRenderer.send('activateview','VIEW ATTIVATA! ')
-      //console.log(filters);
+      ////myLog(filters);
       reportdatasend.viewname = currentview;
       reportdatasend.data = JSON.stringify(getObjects(config[activeTab], 'nome', currentview))
+      reportdatasend.tabs = activeTab
 
-     //console.log("REPORT DATA SEND",getObjects(config[activeTab], 'nome', currentview),config[activeTab]);
+      ////myLog("REPORT DATA SEND",getObjects(config[activeTab], 'nome', currentview),config[activeTab]);
       windows.push(new BrowserWindow({
-        width: 1152,
-        height: 720,
+        width: 1300,
+        height: 800,
         x: 500,
-        /* titleBarStyle: 'hidden-inset',*/
-        title: currentview + " | " + from
+        titleBarStyle: 'hidden-inset',
+        title: currentview + " | " + from,
+        "web-preferences": {
+          "web-security": false
+        }
       }))
       //windows[window.length].loadURL(`file://${__dirname}/view.html`);
       var len = (windows.length - 1) > 0 ? windows.length - 1 : 0;
@@ -462,14 +631,14 @@
 
         }
       }
-     //console.log("GET FILTERS ", gf);
+     console.log("GET FILTERS ", gf);
       windows[len].loadURL("http://localhost:3000/data/" + currentview + '?' + gf);
       windows[len].on('closed', function(a, b, c) {
-        //console.log("CHIUDO ", windows, a, b, c)
+        ////myLog("CHIUDO ", windows, a, b, c)
         windows.splice(len, 1)
       })
       ipcRenderer.send('onCreateView', reportdatasend);
-      //console.log("CARICO LA VISTA ", currentview);
+      ////myLog("CARICO LA VISTA ", currentview);
     })
     $('.loadpage').on("click", function(e) {
       e.preventDefault();
@@ -491,17 +660,29 @@
   $(".reportselect").on('change', function() {
     $('.mainfilters').show();
     $('.createview').show();
+    $('.getanalisys').show();
     filters = {};
     var report = $(this).val();
-   //console.log("CONFIG ",report,activeTab);
-    enableFilters(report,activeTab)
+   console.log("CONFIG ", report);
+
+    enableFilters(report, activeTab)
   })
 
+function cambiaDB(dbname) {
+  ipcRenderer.send('changeDatabase',{dbname:dbname})
+}
+
+  function updateProgressBar(val, sec) {
+    $('.progress-bar').css('width', val + '%').attr('aria-valuenow', val);
+    sec=parseInt(sec*100)/100 || 0;
+    $('.remaining').html(sec + " seconds left")
+  }
 
 
-  function enableFilters(report,tab) {
-   //console.log("-----ENABLE FILTERS------", report);
-    reportID=report
+
+  function enableFilters(report, tab) {
+   console.log("-----ENABLE FILTERS------", report, tab);
+    reportID = report
     $('.mainfilters').empty();
     $('.types').empty();
 
@@ -509,7 +690,7 @@
     var filters = '';
     var types = '';
     format = "YYYY-MM-DD";
-
+   console.log("NODE ", node, node.filters)
     if (node.filters) {
       filters += '<div class="form-group col-xs-12 text-center">\n\t<label for="from">Filter by</label><br>\n';
       for (var p in node.filters) {
@@ -519,21 +700,21 @@
 
         }
         if (node.filters[p].type == "date") {
-          filters += bfsdatepicker(from);
+          filters += bfsdatepicker(from,true);
         }
       }
       filters += '</div>'
       $(filters).appendTo('.mainfilters');
     }
     if (node.groupby) {
-      //console.log("INVIO ", node.groupby);
+      ////myLog("INVIO ", node.groupby);
       dates = '<div class="row dates ">\n\t<div class="form-group col-xs-12 text-center">\n\t<label for="period">Period</label>   <br>';
       dates += option('dates', node.groupby.type, node.groupby.values);
       dates += '</div></div>';
       $(dates).appendTo('.types')
     }
     if (node.tipologia) {
-      //console.log("INVIO TIPOLOGIA", node.tipologia.length);
+      ////myLog("INVIO TIPOLOGIA", node.tipologia.length);
       for (var t in node.tipologia) {
         types += '<div class="form-group col-xs-6 text-center">\n\t<label for="from">From</label><br>\n';
         types += option(node.tipologia[t].nome, node.tipologia[t].type, node.tipologia[t].values);
@@ -547,15 +728,16 @@
 
     datepicker = $('input[name="daterange"]').datepicker({
       language: "en",
+      toggleSelected:false,
       minView: calendarview,
       dateFormat: format.toLowerCase(),
       view: calendarview,
-      range: false,
+      /*range: false,*/
       maxDate: new Date(),
       position: "top left",
       onSelect: function(formattedDate, date, inst) {
 
-        ff = $('#dates').find('.active').find('input').val();
+        ff = $(targetID + ' #dates').find('.active').find('input').val();
         switch (ff) {
           case "DAY":
             format = "YYYY-MM-DD";
@@ -569,7 +751,7 @@
 
             break;
           case "YEAR":
-            format = "YY-MM";
+            format = "YYYY";
 
             break;
           default:
@@ -578,22 +760,27 @@
 
         }
         //ddate=formattedDate.split(" | ")
-        from = moment(formattedDate).format(format)
+        // from = moment(formattedDate).format(format)
+        from = formattedDate;
         //fto=moment(date[1]).format(format)
-        //console.log("DATA DA INVIARE ",from);
+        //myLog("DATA DA INVIARE ", formattedDate);
 
       }
     }).data('datepicker');
 
-    $('#dates').on('click', 'label', function(e) {
+    $(targetID + ' #dates').on('click', 'label', function(e) {
       e.preventDefault()
-      //console.log("CLICK SU LABEL");
+     console.log("CLICK SU LABEL",targetID,activeTab);
       filters = {};
 
       switch ($(this).find('input').val()) {
         case "DAY":
           format = "YYYY-MM-DD";
-          from = moment().subtract(1, 'months').format(format)
+          if(activeTab=='report_any'){
+            from = moment().subtract(7, 'days').format(format)
+          }else{
+            from = moment().subtract(1, 'months').format(format)
+          }
           //to = moment().format(format)
           calendarview = 'days';
           break;
@@ -610,14 +797,14 @@
           calendarview = 'months';
           break;
         case "YEAR":
-          format = "YY-MM";
+          format = "YYYY";
           from = moment().subtract(5, 'years').format(format)
           // to = moment().format(format)
           calendarview = 'years'
           break;
         default:
           format = "YYYY-MM-DD";
-          from = moment().subtract(15, 'days').format(format)
+          from = moment().subtract(5, 'days').format(format)
           // to = moment().format(format)
           calendarview = 'days'
 
@@ -628,7 +815,7 @@
       datepicker.view = calendarview;
 
       datapicker.dateFormat = format.toLowerCase();
-      //console.log("CAMBIO DATA ", $(this).find('input').val(), calendarview);
+      ////myLog("CAMBIO DATA ", $(this).find('input').val(), calendarview);
       //$('input[name="daterange"]').attr('data-date-format', format.toLowerCase()).val(from + ' | ' + to);
       if ($(this).find('input').val() != 'WEEK') {
         datepicker.update({
@@ -642,13 +829,13 @@
 
       }
       $('input[name="daterange"]').attr('value', from).val(from)
-      //console.log("DP DATA",datepicker);
+      ////myLog("DP DATA",datepicker);
       // if($(this).find('input').val()!="WEEK"){
       //   $('input[name="daterange"]').attr('data-date-format', format.toLowerCase()).val(from + ' | ' + to)
       // }
     })
     if (node.nome == "ATTIVITA") {
-      from = moment().subtract(10, 'days').format('YYYY-MM-DD')
+      from = moment().subtract(5, 'days').format('YYYY-MM-DD')
       datepicker.update({
         'dateFormat': format.toLowerCase(),
         'minView': 'days',
@@ -660,13 +847,13 @@
     // $(".date-from").attr("value", start);
     // $(".date-to").attr("value", end);
     //$('body');
-    $('#dates').find('label.active').trigger('click');
+    $(targetID + ' #dates').find('label.active').trigger('click');
 
   }
 
 
   function selectBox(name, obj, multiple = true) {
-    //console.log("SELECT BOX ", obj);
+    console.log("SELECT BOX ", obj);
     var multiple = (multiple) ? 'multiple' : '';
     var selectbox = '<div class="form-inline">\n\t<div class="form-group col-xs-2 col-xs-4">\n\t<select class="selectpicker show-tick" ' + multiple + ' title="' + name +
       '" data-max-options="1" data-actions-box="false" data-live-search="true" name="' + name + '" id="' + name + '">\n\t<option data-hidden="true">-</option>';
@@ -675,7 +862,7 @@
 
     for (var p in obj) {
       selectbox += "<option value=" + obj[p].val + ">" + obj[p].nome + "</option>\n";
-      //console.log("P ",p," FILTER ",obj[p]);
+      ////myLog("P ",p," FILTER ",obj[p]);
     }
     selectbox += "</select></div></div>\n";
     //$('#'+name).selectpicker("refresh");
@@ -683,15 +870,15 @@
     return selectbox;
   }
 
-  function bfsdatepicker(from) {
-    return '<div class="form-inline"><div class="form-group col-xs-2 col-xs-4">\n\t<div class="input-group input-daterange">\n\t<input type="text" name="daterange" class="form-control" data-language="en" data-date-format="yyyy-mm-dd" data-min-view="days" data-range="false" value="' +
+  function bfsdatepicker(from,isrange) {
+    return '<div class="form-inline"><div class="form-group col-xs-2 col-xs-4">\n\t<div class="input-group input-daterange">\n\t<input type="text" name="daterange" class="form-control" data-language="en" data-date-format="yyyy-mm-dd" data-min-view="days" data-range="'+isrange+'" data-multiple-dates-separator=" | " value="' +
       from + '">\n\t</div></div></div>';
   }
 
   function option(name, type, obj) {
     //TYPE "RADIO" or "CHECKBOX"
     //OBJ ARRAY
-    //console.log("OPTION ", name, type, obj);
+    ////myLog("OPTION ", name, type, obj);
     var ret = '<div id="' + name + '" data-toggle="buttons" class="btn-group btn-group-justified" role="group">\n\t';
     var counter = 0;
     for (var p in obj) {
@@ -714,31 +901,33 @@
     config = report = null
     $.ajax({
       dataType: "json",
-      url: path.join(DOCUMENTS, "lookin", "data", "config.json"),
+      url: path.join(DOCUMENTS, "lookin", "config.json"),
       success: function(data) {
         config = data;
         report = data.report;
+        $('p.username').html("Hello <b>" + data.app[0].nominativo + "</b>");
         //alert("USER "+data.user.username+" PWD "+data.user.password);
-       //console.log("DATA REPORT ", data[activeTab]);
+        //myLog("DATA REPORT ", data);
         //$('a[data-toggle="tab"]').eq(0).trigger('click')
         //reportOption(data[activeTab], $('.reportselect:eq(0)'));
-
+        return data;
       }
     })
 
   }
 
   function reportOption(data, tab) {
-   //console.log("REPORT OPTION ", tab)
+    console.info("REPORT OPTION ", data);
     var reportoption = '';
     $(data).each(function(key, val) {
-     //console.log("VAL ", key, val);
+     console.log("VAL ", this.isActive);
+      if(this.isActive==1){
       reportoption += '<option value="' + key + '" ';
       if (val.active == 0) {
         reportoption += ' disabled';
       }
       reportoption += ' >' + val.nome + '</option>';
-
+    }
     })
     $(tab).empty().append(reportoption).selectpicker("refresh");
   }
@@ -754,20 +943,22 @@
 
         objects = objects.concat(getObjects(obj[i], key, val));
       } else if (i == key && obj[key] == val) {
-       //console.log("AGGIUNGO L'OGGETTO ",obj);
+        ////myLog("AGGIUNGO L'OGGETTO ",obj);
         objects.push(obj);
       }
     }
     return objects;
   }
-  function findObject(obj,key,val) {
-    return obj[key]==val
+
+  function findObject(obj, key, val) {
+    return obj[key] == val
 
   }
+
   function closeAllWindows() {
 
     try {
-      //console.log("CHIUDO TUTTE LE FINESTRE");
+      ////myLog("CHIUDO TUTTE LE FINESTRE");
       if (windows.length > 0) {
         for (var w in windows) {
           windows[w].close();
@@ -776,11 +967,29 @@
         return true;
       }
     } catch (err) {
-      //console.log("ERRORE ", err);
+      ////myLog("ERRORE ", err);
       return false
     }
     return true;
 
+  }
+
+  function myLog() {
+    data = '';
+    for (var i = 0; i < arguments.length; i++) {
+      if (typeof(arguments[i]) == 'Object') {
+        o = arguments[i];
+        for (var v in o) {
+          data += "{" + v + " | " + o[v] + "}";
+        }
+      } else {
+        data += arguments[i] + " | ";
+      }
+
+    }
+    fs.appendFile(path.join(app.getPath('documents'), 'lookin', 'log.txt'), "[" + moment().format("YYYY-MM-DD - hh:mm:ss") + "]\t => " + data + "\r\n", function(err) {
+
+    })
   }
 </script>
 
